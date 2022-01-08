@@ -5,7 +5,7 @@ export class Actor extends Physics.Arcade.Sprite {
         super(scene, x, y, texture, frame);
         scene.add.existing(this);
         scene.physics.add.existing(this);
-        // this.getBody().setCollideWorldBounds(true);
+        this.getBody().setCollideWorldBounds(true);
     }
 
     // getBody() exists to ensure that TS knows this is a dynamic Arcade.Body

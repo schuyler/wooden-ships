@@ -29,6 +29,6 @@ export class Player extends Actor {
             body.setAcceleration(0, 0);
         }
 
-        this.scene.physics.world.wrap(this);
+        // this.scene.physics.world.wrap(this);
     }
 }
