@@ -40,9 +40,11 @@ export class MainScene extends Scene {
     }
 
     private initCamera(): void {
+        const bounds = this.physics.world.bounds;
         this.cameras.main.setSize(this.game.scale.width, this.game.scale.height);
+        this.cameras.main.setBounds(0, 0, bounds.width, bounds.height);
         this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-        this.cameras.main.setZoom(0.5);
+        // this.cameras.main.setZoom(0.5);
     }
 
     create(): void {
