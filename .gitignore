@@ -3,4 +3,3 @@ archive/
 dist/
 node_modules/
 *.log
-package-lock.json
