@@ -1,8 +1,10 @@
 import { Scene, GameObjects, Tilemaps } from 'phaser';
 import { Player } from '../../classes/player';
+import { Wind } from '../../classes/weather';
 
 export class MainScene extends Scene {
     private player!: GameObjects.Sprite;
+    private wind: Wind;
 
     private map!: Tilemaps.Tilemap;
     private tileset!: Tilemaps.Tileset;
@@ -12,6 +14,7 @@ export class MainScene extends Scene {
 
     constructor() {
         super('main-scene');
+        this.wind = new Wind(45, 10);
     }
 
     preload(): void {
@@ -30,7 +33,7 @@ export class MainScene extends Scene {
     }
 
     private initMap(): void {
-        this.map = this.make.tilemap({ key: 'level-0'});
+        this.map = this.make.tilemap({ key: 'level-0' });
         this.tileset = this.map.addTilesetImage('tiles', 'tiles');
         this.oceanLayer = this.map.createLayer('Ocean', this.tileset, 0, 0);
         this.shallowsLayer = this.map.createLayer('Shallows', this.tileset, 0, 0);
@@ -54,7 +57,7 @@ export class MainScene extends Scene {
         this.initCamera();
     }
 
-    update(): void {
-        this.player.update();
+    update(time: number, delta: number): void {
+        this.player.update(this.wind);
     }
 }
