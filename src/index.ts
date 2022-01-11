@@ -1,5 +1,5 @@
 import { Game, Types } from 'phaser';
-import { MainScene } from './scenes';
+import { LabScene, MainScene } from './scenes';
 
 interface Window {
     sizeChanged: () => void;
@@ -10,7 +10,7 @@ const gameConfig: Types.Core.GameConfig = {
     title: 'Wooden Ships!',
     type: Phaser.AUTO,
     parent: 'game',
-    backgroundColor: '#004488',
+    backgroundColor: '#002244',
     scale: {
         // mode: Phaser.Scale.ScaleModes.NONE,
         width: window.innerWidth,
@@ -36,7 +36,7 @@ const gameConfig: Types.Core.GameConfig = {
     audio: {
         disableWebAudio: false,
     },
-    scene: [MainScene],
+    scene: [LabScene, MainScene],
 };
 
 function sizeChanged(): void {
