@@ -7,7 +7,7 @@ import Body = Physics.Arcade.Body;
 type SpecName = 'aeroLift' | 'aeroDrag' | 'hydroDrag' | 'yawRate';
 export type Specs = Record<SpecName, number>;
 
-const yawDragFactor = 15;
+const yawDragFactor = 1;
 const hydroDragFactor = 100;
 const sailAreaFactor = 1;
 
@@ -28,14 +28,10 @@ export class Vessel {
         this.body = body;
         this.fixedRotation = fixedRotation ?? 0;
         this.specs = specs ?? DefaultSpecs;
-
-        body.setAngularDrag(this.specs.hydroDrag * yawDragFactor);
-        // seems like an oversight that there's no accessor for this
-        body.maxAngular = this.specs.yawRate;
     }
 
     public heading(): number {
-        return this.body.rotation + this.fixedRotation;
+        return Math.Angle.Wrap(this.body.rotation + this.fixedRotation);
     }
 
     public turn(rudder: number) {
@@ -52,11 +48,12 @@ export class Vessel {
         const aeroForce = apparentWind.speed() * aeroFactor;
         const hydroForce = -this.specs.hydroDrag * Math_.pow(shipVelocity.length(), 2);
         const totalForce = aeroForce + hydroForce;
+
         return {apparentWind, angleOfAttack, lift, drag, aeroFactor, aeroForce, hydroForce, totalForce};
     }
 
     public applyWindForce(wind: Wind) {
-        const shipVelocity = this.body.velocity;
+        const shipVelocity = this.body.velocity.clone();
         const f = this.computeForces(wind, shipVelocity, this.heading());
         const accel = new Math.Vector2(f.totalForce, 0);
         accel.rotate(shipVelocity.angle());
