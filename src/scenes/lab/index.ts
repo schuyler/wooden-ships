@@ -1,5 +1,5 @@
 import { Scene, GameObjects, Physics, Input, Math } from 'phaser';
-import { Wind, Specs, DefaultSpecs } from '../../classes';
+import { Wind, Vessel, DefaultSpecs } from '../../classes';
 import { Math_, _r, _d } from '../../helpers/math';
 
 type ArrowKeys = Record<"W" | "A" | "S" | "D" | 
@@ -13,6 +13,7 @@ export class LabScene extends Scene {
     private readout!: GameObjects.Text;
 
     private wind: Wind;
+    private vessel!: Vessel;
     private shipSpeed: number = 0;
     private arrowCenter: Math.Vector2;
     private arrowDistance: number = 0;
@@ -33,7 +34,6 @@ export class LabScene extends Scene {
         this.load.image('arrow', 'images/arrow.png');
     }
 
- 
     create(): void {
         let midPoint = new Math.Vector2(this.game.scale.width/2, this.game.scale.height/2);
         let shipAnchor = new Math.Vector2(midPoint.x / 2, midPoint.y);
@@ -57,6 +57,11 @@ export class LabScene extends Scene {
 
         this.readout = this.add.text(midPoint.x * 5/4, midPoint.y, '', {align: "left"});
         this.readout.setOrigin(0, 0.5);
+
+        this.vessel = new Vessel({
+            body: this.ship.body as Physics.Arcade.Body,
+            fixedRotation: Math_.PI/2
+        });
     }
 
     showWindOrigin(): void {
@@ -64,10 +69,6 @@ export class LabScene extends Scene {
         const angle = Math.Angle.Reverse(this.arrow.rotation);
         Math.RotateAroundDistance(point, this.arrowCenter.x, this.arrowCenter.y, angle, this.arrowDistance);
         this.arrow.setPosition(point.x, point.y);
-    }
-
-    computeApparentWind(): number {
-        return 0;
     }
 
     vectorToString(v: Math.Vector2): string {
@@ -80,40 +81,24 @@ export class LabScene extends Scene {
               shipRotation = Math.Angle.Normalize(this.ship.rotation + Math_.PI/2);
         shipVelocity.rotate(shipRotation);
 
-        const apparentWind = this.wind.relativeTo(shipVelocity);
-        const angleOfAttack = apparentWind.angleOfAttack(shipVelocity);
-
-        const specs : Specs = {
-            aeroLift: 1.0,
-            aeroDrag: 1.0,
-            hydroDrag: 0.05,
-            yawRate: 30
-        };
-
-        const lift = Math_.abs(Math_.sin(angleOfAttack));
-        const drag = Math_.cos(angleOfAttack);
-        const aeroFactor = specs.aeroLift * lift - specs.aeroDrag * drag;
-        const aeroForce = apparentWind.speed() * aeroFactor;
-        const hydroForce = -specs.hydroDrag * Math_.pow(shipVelocity.length(), 2);
-        const totalForce = aeroForce + hydroForce;
-        
+        const f = this.vessel.computeForces(this.wind, shipVelocity, shipRotation);
+        const specs = DefaultSpecs;
         this.readout.setText([
             `    ship actual: ${this.vectorToString(shipVelocity)}`,
             '',
             `      wind from: ${_r(this.wind.direction())}º`,
             `    wind actual: ${this.vectorToString(this.wind)}`,
-            `  apparent wind: ${this.vectorToString(apparentWind)}`,
+            `  apparent wind: ${this.vectorToString(f.apparentWind)}`,
             '',
-            `angle of attack: ${_r(_d(angleOfAttack))}º`,
-            ` lift component: ${_r(lift, -3)} * (L=${_r(specs.aeroLift, -3)})`,
-            ` drag component: ${_r(drag, -3)} * (D=${_r(specs.aeroDrag, -3)})`,
-            `     total aero: ${_r(aeroFactor, -3)}`,
+            `angle of attack: ${_r(_d(f.angleOfAttack))}º`,
+            ` lift component: ${_r(f.lift, -3)} * (L=${_r(specs.aeroLift, -3)})`,
+            ` drag component: ${_r(f.drag, -3)} * (D=${_r(specs.aeroDrag, -3)})`,
+            `     total aero: ${_r(f.aeroFactor, -3)}`,
             '',
-            `     wind force: ${_r(aeroForce, -3)}`,
-            `     hydro drag: ${_r(hydroForce, -3)} (drag=${_r(specs.hydroDrag, -5)})`,
-            `    total accel: ${_r(totalForce, -3)}`
+            `     wind force: ${_r(f.aeroForce, -3)}`,
+            `     hydro drag: ${_r(f.hydroForce, -3)} (drag=${_r(specs.hydroDrag, -5)})`,
+            `    total accel: ${_r(f.totalForce, -3)}`
         ]);
-
     }
 
     update(time: number, delta: number): void {

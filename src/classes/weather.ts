@@ -38,7 +38,7 @@ export class Wind extends Math.Vector2 {
         return apparentWind;
     }
 
-    public angleOfAttack(velocity: Math.Vector2) {
-        return Math.Angle.Wrap(Math.Angle.Reverse(this.angle()) - velocity.angle());
+    public angleOfAttack(heading: number) {
+        return Math.Angle.Wrap(Math.Angle.Reverse(this.angle()) - heading);
     }
 }

@@ -2,6 +2,8 @@ import { Physics, Math } from 'phaser';
 import { Wind } from './weather';
 import { Math_, _d, _r } from '../helpers/math';
 
+import Body = Physics.Arcade.Body;
+
 type SpecName = 'aeroLift' | 'aeroDrag' | 'hydroDrag' | 'yawRate';
 export type Specs = Record<SpecName, number>;
 
@@ -10,25 +12,22 @@ const hydroDragFactor = 100;
 const sailAreaFactor = 1;
 
 export const DefaultSpecs: Specs = {
-    aeroLift: 0.35,
-    aeroDrag: 0.25,
-    hydroDrag: 0.95,
+    aeroLift: 1.0,
+    aeroDrag: 1.0,
+    hydroDrag: 0.05,
     yawRate: 30
 };
+;
 
 export class Vessel {
-    public body: Physics.Arcade.Body;
+    public body: Body;
     protected specs: Specs;
-    private lastReport: number;
+    private fixedRotation: number;
 
-    constructor({ specs, body }: { body: Physics.Arcade.Body, specs?: Specs }) {
+    constructor({ body, fixedRotation, specs }: { body: Body, fixedRotation?: number, specs?: Specs }) {
         this.body = body;
+        this.fixedRotation = fixedRotation ?? 0;
         this.specs = specs ?? DefaultSpecs;
-        this.lastReport = 100;
-
-        const drag = this.specs.hydroDrag * hydroDragFactor;
-        body.setDrag(drag, drag);
-        body.setDamping(true);
 
         body.setAngularDrag(this.specs.hydroDrag * yawDragFactor);
         // seems like an oversight that there's no accessor for this
@@ -36,18 +35,32 @@ export class Vessel {
     }
 
     public heading(): number {
-        return _d(this.body.rotation + 90);
+        return this.body.rotation + this.fixedRotation;
     }
 
     public turn(rudder: number) {
         this.body.setAngularAcceleration(rudder * this.specs.yawRate);
     }
 
-    public applyWindForce(wind: Wind) {
-        const apparentWind = wind.relativeTo(this.body.velocity);
-        const angleOfAttack = apparentWind.direction() - Math.Angle.Reverse(this.heading());
+    public computeForces(wind: Wind, shipVelocity: Math.Vector2, shipHeading: number) {
+        const apparentWind = wind.relativeTo(shipVelocity);
+        const angleOfAttack = apparentWind.angleOfAttack(shipHeading);
 
-        // this.body.setAcceleration(windAcceleration.x, windAcceleration.y);
+        const lift = Math_.abs(Math_.sin(angleOfAttack));
+        const drag = Math_.cos(angleOfAttack);
+        const aeroFactor = this.specs.aeroLift * lift - this.specs.aeroDrag * drag;
+        const aeroForce = apparentWind.speed() * aeroFactor;
+        const hydroForce = -this.specs.hydroDrag * Math_.pow(shipVelocity.length(), 2);
+        const totalForce = aeroForce + hydroForce;
+        return {apparentWind, angleOfAttack, lift, drag, aeroFactor, aeroForce, hydroForce, totalForce};
+    }
+
+    public applyWindForce(wind: Wind) {
+        const shipVelocity = this.body.velocity;
+        const f = this.computeForces(wind, shipVelocity, this.heading());
+        const accel = new Math.Vector2(f.totalForce, 0);
+        accel.rotate(shipVelocity.angle());
+        this.body.setAcceleration(accel.x, accel.y);
     }
 
     public update(wind: Wind) {
