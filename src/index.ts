@@ -36,7 +36,7 @@ const gameConfig: Types.Core.GameConfig = {
     audio: {
         disableWebAudio: false,
     },
-    scene: [MainScene],
+    scene: [LabScene, MainScene],
 };
 
 function sizeChanged(): void {
