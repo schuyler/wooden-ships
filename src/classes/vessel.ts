@@ -1,9 +1,9 @@
 import { Physics, Math } from 'phaser';
 import { Wind } from './weather';
-import { sin, cos } from '../helpers/math';
+import { Math_, _d, _r } from '../helpers/math';
 
 type SpecName = 'aeroLift' | 'aeroDrag' | 'hydroDrag' | 'yawRate';
-type Specs = Record<SpecName, number>;
+export type Specs = Record<SpecName, number>;
 
 const yawDragFactor = 15;
 const hydroDragFactor = 100;
@@ -36,7 +36,7 @@ export class Vessel {
     }
 
     public heading(): number {
-        return Math.DegToRad(this.body.rotation + 90);
+        return _d(this.body.rotation + 90);
     }
 
     public turn(rudder: number) {
@@ -46,21 +46,8 @@ export class Vessel {
     public applyWindForce(wind: Wind) {
         const apparentWind = wind.relativeTo(this.body.velocity);
         const angleOfAttack = apparentWind.direction() - Math.Angle.Reverse(this.heading());
-        let forceOnSails = 
-            this.specs.aeroLift * sin(angleOfAttack) -
-            this.specs.aeroDrag * cos(angleOfAttack);
-        forceOnSails = Math.Clamp(forceOnSails, 0, 100);
-        const windAcceleration = new Math.Vector2();
-        const maxSpeed = wind.speed() * forceOnSails;
-        windAcceleration.setToPolar(this.heading(), maxSpeed - this.body.velocity.length());
-        if (--this.lastReport <= 0) {
-            console.log("vB=", this.body.velocity, "r=", Math.RadToDeg(this.heading()));
-            console.log("vA=", apparentWind, "⍺=", Math.RadToDeg(angleOfAttack), "wind dir=", Math.RadToDeg(apparentWind.direction()), "|vA|=",apparentWind.speed());
-            console.log("Fs=", forceOnSails, "maxS=", maxSpeed);
-            console.log("AB=", windAcceleration);
-            this.lastReport = 100;
-        }
-        this.body.setAcceleration(windAcceleration.x, windAcceleration.y);
+
+        // this.body.setAcceleration(windAcceleration.x, windAcceleration.y);
     }
 
     public update(wind: Wind) {
