@@ -1,4 +1,6 @@
-import { Input, Math } from 'phaser';
+import { GameObjects, Input, Math } from 'phaser';
+import { Math_ } from '../helpers/math';
+import { PX_PER_KNOT } from '../helpers/scale';
 import { Actor } from './actor';
 import { Vessel } from './vessel';
 import { Wind } from './weather';
@@ -8,46 +10,29 @@ const speed = 100;
 
 export class Player extends Actor {
     private cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys;
-    //private vessel: Vessel;
+    private vessel: Vessel;
+    private readout!: GameObjects.Text;
 
-    constructor(scene: Phaser.Scene, x: number, y: number) {
+    constructor(scene: Phaser.Scene, x: number, y: number, readout: GameObjects.Text) {
         super(scene, x, y, 'ships', 'ship (2).png');
 
-        //this.vessel = new Vessel({body: this.getBody()});
+        this.vessel = new Vessel({body: this.getBody(), heading: Math_.PI/2});
+        this.setVelocity(1.0 * PX_PER_KNOT);
         
         this.cursorKeys = this.scene.input.keyboard.createCursorKeys();
-        // this.getBody().setSize(32, 32);
-        // this.getBody().setOffset(8, 0);
-
-        this.setAngularDrag(turningRate);
-        this.setDrag(speed);
+        this.readout = readout;
     }
 
     update(wind: Wind): void {
-        // if (this.cursorKeys.left.isDown) {
-        //     this.vessel.turn(-1.0);
-        // } else if (this.cursorKeys.right.isDown) {
-        //     this.vessel.turn(1.0);
-        // } else {
-        //     this.vessel.turn(0.0);
-        // }
-        //this.vessel.update(wind);
-
         if (this.cursorKeys.left.isDown) {
-            this.setAngularAcceleration(-turningRate);
+            this.vessel.setRudder(-1.0);
         } else if (this.cursorKeys.right.isDown) {
-            this.setAngularAcceleration(turningRate);
+            this.vessel.setRudder(1.0);
         } else {
-            this.setAngularAcceleration(0);  
+            this.vessel.setRudder(0.0);
         }
-
-        if (this.cursorKeys.up.isDown) {
-            const direction = new Math.Vector2(speed, 0);
-            direction.setAngle(this.rotation + Math.DegToRad(90));
-            console.log("rotation=", Math.RadToDeg(this.rotation), "direction=", direction);
-            this.setAcceleration(direction.x, direction.y);
-        } else {
-            this.setAcceleration(0.0);
-        }
+        const f = this.vessel.update(wind);
+        this.setRotation(this.vessel.heading() - Math_.PI/2);
+        this.readout.setText(this.vessel.debugMotion(f));
     }
 }

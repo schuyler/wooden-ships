@@ -12,9 +12,11 @@ export class MainScene extends Scene {
     private shallowsLayer!: Tilemaps.TilemapLayer;
     private islandsLayer!: Tilemaps.TilemapLayer;
 
+    private readout!: GameObjects.Text;
+
     constructor() {
         super('main-scene');
-        this.wind = new Wind(45, 10);
+        this.wind = new Wind(225, 10);
     }
 
     preload(): void {
@@ -52,7 +54,9 @@ export class MainScene extends Scene {
 
     create(): void {
         this.initMap();
-        this.player = new Player(this, 100, 100);
+        this.readout = this.add.text(0, 0, '', {align: "left", color: "#000000"});
+        this.readout.setScrollFactor(0);
+        this.player = new Player(this, 300, 300, this.readout);
         this.physics.add.collider(this.player, this.islandsLayer);
         this.initCamera();
     }

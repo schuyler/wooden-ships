@@ -38,7 +38,8 @@ export class LabScene extends Scene {
         let midPoint = new Math.Vector2(this.game.scale.width/2, this.game.scale.height/2);
         let shipAnchor = new Math.Vector2(midPoint.x / 2, midPoint.y);
         let radius = shipAnchor.x / 2;
-        let circle = this.add.circle(shipAnchor.x, shipAnchor.y, radius, 0xffffff, 224);
+        
+        this.add.circle(shipAnchor.x, shipAnchor.y, radius, 0xffffff, 224);
 
         const textOffset = radius + 32;
         const textFormat = {align: "center"};
@@ -60,7 +61,8 @@ export class LabScene extends Scene {
 
         this.vessel = new Vessel({
             body: this.ship.body as Physics.Arcade.Body,
-            fixedRotation: Math_.PI/2
+            heading: 0,
+            specs: DefaultSpecs
         });
     }
 
@@ -71,34 +73,13 @@ export class LabScene extends Scene {
         this.arrow.setPosition(point.x, point.y);
     }
 
-    vectorToString(v: Math.Vector2): string {
-        return `${_r(_d(v.angle()))}º @ ${_r(v.length(), -1)} kts (x=${_r(v.x, -1)}, y=${_r(v.y, -1)})`;
-
-    }
-
     updateReadout(): void {
         const shipVelocity = new Math.Vector2(this.shipSpeed, 0),
               shipRotation = Math.Angle.Normalize(this.ship.rotation + Math_.PI/2);
         shipVelocity.rotate(shipRotation);
 
-        const f = this.vessel.computeForces(this.wind, shipVelocity, shipRotation);
-        const specs = DefaultSpecs;
-        this.readout.setText([
-            `    ship actual: ${this.vectorToString(shipVelocity)}`,
-            '',
-            `      wind from: ${_r(this.wind.direction())}º`,
-            `    wind actual: ${this.vectorToString(this.wind)}`,
-            `  apparent wind: ${this.vectorToString(f.apparentWind)}`,
-            '',
-            `angle of attack: ${_r(_d(f.angleOfAttack))}º`,
-            ` lift component: ${_r(f.lift, -3)} * (L=${_r(specs.aeroLift, -3)})`,
-            ` drag component: ${_r(f.drag, -3)} * (D=${_r(specs.aeroDrag, -3)})`,
-            `     total aero: ${_r(f.aeroFactor, -3)}`,
-            '',
-            `     wind force: ${_r(f.aeroForce, -3)}`,
-            `     hydro drag: ${_r(f.hydroForce, -3)} (drag=${_r(specs.hydroDrag, -5)})`,
-            `    total accel: ${_r(f.totalForce, -3)}`
-        ]);
+        const f = this.vessel.computeForces(this.wind, this.ship.rotation, shipVelocity);
+        this.readout.setText(this.vessel.debugMotion(f));
     }
 
     update(time: number, delta: number): void {
