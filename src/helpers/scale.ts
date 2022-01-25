@@ -1,5 +1,6 @@
+// the smaller this number is, the faster everything moves
+const METERS_PER_PIXEL = 1/24;
 
-const METERS_PER_PIXEL = 1/20;
 const METERS_PER_NAUTICAL_MILE = 1852;
 const MPS_PER_KNOT = METERS_PER_NAUTICAL_MILE / (60 * 60);
 

@@ -6,13 +6,14 @@ import { PX_PER_KNOT, KNOTS_PER_PX } from '../helpers/scale';
 import Body = Physics.Arcade.Body;
 
 type radians = number;
-type SpecName = 'aeroLift' | 'aeroDrag' | 'hydroDrag' | 'yawRate';
+type SpecName = 'aeroLift' | 'aeroDrag' | 'bowHydroDrag' | 'beamHydroDrag' | 'yawRate';
 export type Specs = Record<SpecName, radians>;
 
 export const DefaultSpecs: Specs = {
     aeroLift: 1.0,
     aeroDrag: 1.0,
-    hydroDrag: 0.05,
+    bowHydroDrag: 0.05,
+    beamHydroDrag: 0.25, // really this should be measured as the square of the cross section
     yawRate: 0.005,
 };
 
@@ -26,6 +27,7 @@ export interface VesselMotion {
     drag: number,
     aeroFactor: number,
     aeroForce: Math.Vector2,
+    hydroDrag: number,
     hydroForce: Math.Vector2,
     totalForce: Math.Vector2,
     rotation: radians
@@ -64,13 +66,15 @@ export class Vessel {
         const aeroForce = new Math.Vector2(apparentWind.speed() * Math_.max(aeroFactor, 0), 0);
         aeroForce.rotate(heading);
 
-        const hydroDrag = -this.specs.hydroDrag * Math_.pow(shipVelocity.length(), 2);
-        const hydroForce = new Math.Vector2(hydroDrag, 0);
+        const hullAngleOfAttack = Math_.abs(Math.Angle.Wrap(shipVelocity.angle() - heading));
+        const hydroDrag = this.specs.bowHydroDrag + (this.specs.beamHydroDrag - this.specs.bowHydroDrag) * Math_.abs(hullAngleOfAttack / Math_.PI);
+        const hydroFactor = -hydroDrag * Math_.pow(shipVelocity.length(), 2);
+        const hydroForce = new Math.Vector2(hydroFactor, 0);
         hydroForce.rotate(shipVelocity.angle() - rotation);
 
         const totalForce = aeroForce.clone().add(hydroForce);
 
-        return {wind, heading, shipVelocity, apparentWind, angleOfAttack, lift, drag, aeroFactor, aeroForce, hydroForce, totalForce, rotation};
+        return {wind, heading, shipVelocity, apparentWind, angleOfAttack, lift, drag, aeroFactor, aeroForce, hydroDrag, hydroForce, totalForce, rotation};
     }
 
     debugMotion(f: VesselMotion): string[] {
@@ -90,7 +94,7 @@ export class Vessel {
             `     total aero: ${_r(f.aeroFactor, -3)}`,
             '',
             `     wind force: ${_v(f.aeroForce)}`,
-            `     hydro drag: ${_v(f.hydroForce)} (drag=${_r(this.specs.hydroDrag, -5)})`,
+            `     hydro drag: ${_v(f.hydroForce)} (drag=${_r(f.hydroDrag, -5)})`,
             `    total accel: ${_v(f.totalForce)}`,
             `       rotation: ${_d(f.rotation)}º`
         ];
